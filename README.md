@@ -3,6 +3,13 @@ This is a simple forest generator for Roblox Studio that I made for another proj
 
 ⚠️ **Note:** Support for **cylinders is partial**, and **spheres do not work**
 
+## Example Forest
+
+<div align="center">
+  <img src="images/Model.PNG" alt="Blank Model Preview" width="45%" height="300px"> 
+  <img src="images/ModelForest.PNG" alt="Forest Model Preview" width="45%" height="300px">
+</div>
+
 ## **📌 How To Use**
 1. Download the `ForestScripts.rbxm`
 2. Drag the file into your Roblox Studio Experience. It will convert into a folder with module scripts inside
