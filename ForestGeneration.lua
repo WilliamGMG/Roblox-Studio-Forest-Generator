@@ -26,7 +26,7 @@ end
 local function createPartsXYListFromModel(model)
 	local decendents = model:GetDescendants()
 	local parts = {}
-	
+
 	for _, descendant in pairs(decendents) do
 		local descendantPosition = descendant.Position
 		local descendantSize = descendant.Size
@@ -47,25 +47,25 @@ local function getYfromXZ(parts, x, z)
 	for _, partInfo in pairs(parts) do
 		if x >= partInfo[1] and x <= partInfo[2] and z >= partInfo[3] and z <= partInfo[4] then
 			-- point is above this part
-			
+
 			local part = partInfo[5]
-			
+
 			local rayOrigin = Vector3.new(x, 1000, z)
 			local rayDirection = Vector3.new(0, -2000, 0)
-			
+
 			local raycastParams = RaycastParams.new()
 			raycastParams.IgnoreWater = true
 			raycastParams.FilterDescendantsInstances = {part}
 			raycastParams.FilterType = Enum.RaycastFilterType.Include
-			
+
 			local raycastResult = workspace:Raycast(rayOrigin, rayDirection, raycastParams)
-			
+
 			if raycastResult then
 				return raycastResult.Position.Y
 			end
 		end
 	end
-	
+
 	return nil
 end
 
@@ -81,7 +81,7 @@ local function getGridIndex(x, z, cellSize, gridWidth, gridLength)
 end
 
 local function validPoint(parts, x, z, cellSize, gridWidth, gridLength, lowerX, lowerZ, grid, radius)
-	
+
 	-- Check if point is within bounds of the model
 	local inBounds = false
 	for _, part in pairs(parts) do
@@ -90,20 +90,20 @@ local function validPoint(parts, x, z, cellSize, gridWidth, gridLength, lowerX, 
 			break
 		end
 	end
-	
+
 	if not inBounds then
 		return false
 	end
-	
+
 	-- Center points on model
 	local cenX = calcDistance(x, lowerX)
 	local cenZ = calcDistance(z, lowerZ)
-	
+
 	-- Check if point has a valid index
 	if getGridIndex(cenX, cenZ, cellSize, gridWidth, gridLength) == nil then
 		return false
 	end
-	
+
 	-- Check neighboring cells
 	local gx = math.floor(cenX / cellSize) + 1
 	local gz = math.floor(cenZ / cellSize) + 1
@@ -123,24 +123,24 @@ local function validPoint(parts, x, z, cellSize, gridWidth, gridLength, lowerX, 
 			end
 		end
 	end
-	
+
 	return true
 end
 
-local function createForest(ForestLocation, model) -- Poisson Disk Sampling (Bridson Algorithm)
+local function createForest(model) -- Poisson Disk Sampling (Bridson Algorithm)
 	local parts = createPartsXYListFromModel(model)
 	local radius = ForestSettings.PoissonDiskSamplingRadius
 	local maxAttempts = ForestSettings.maxPointPlaceAttempts
-	
+
 	local cellSize = radius / math.sqrt(2)
-	
+
 	-- Grid Size
 	local modelPosition, modelSize = model:GetBoundingBox()
 	local gridWidth = math.abs(math.ceil(modelSize.X / cellSize))
 	local gridLength = math.abs(math.ceil(modelSize.Z / cellSize))
 	local lowerX = modelPosition.X - modelSize.X / 2
 	local lowerZ = modelPosition.Z - modelSize.Z / 2
-	
+
 	-- Initialize grid and active list
 	local grid = {}
 	for i = 1, gridWidth * gridLength do
@@ -148,21 +148,21 @@ local function createForest(ForestLocation, model) -- Poisson Disk Sampling (Bri
 	end
 	local activeList = {}
 	local points = {}
-	
+
 	-- Get random starting point on first part in model
 	local startX = math.random(parts[1][1], parts[1][2])
 	local startZ = math.random(parts[1][3], parts[1][4])
 	local startY = getYfromXZ(parts, startX, startZ)
 	local startVector = Vector3.new(startX, startY, startZ)
-	
+
 	-- Center points on the lower edge of the model and get its index
 	local startIndex = getGridIndex(calcDistance(startX, lowerX), calcDistance(startZ, lowerZ), cellSize, gridWidth, gridLength)
-	
+
 	-- Add the x and y to the grid, active list, and points
 	grid[startIndex] = {x = startX, z = startZ}
 	table.insert(activeList, {x = startX, z = startZ})
 	table.insert(points, Vector3.new(startX, startY, startZ))
-	
+
 	-- Start main loop
 	while #activeList > 0 do
 		-- Pick a random point from the active list
@@ -172,7 +172,7 @@ local function createForest(ForestLocation, model) -- Poisson Disk Sampling (Bri
 		local found = false
 		for i = 1, maxAttempts do
 			local newX, newZ = generateRandomPointAround(point.x, point.z, radius)
-			
+
 			if validPoint(parts, newX, newZ, cellSize, gridWidth, gridLength, lowerX, lowerZ, grid, radius) then
 				local newIndex = getGridIndex(calcDistance(newX, lowerX), calcDistance(newZ, lowerZ), cellSize, gridWidth, gridLength)
 				grid[newIndex] = {x = newX, z = newZ}
@@ -184,22 +184,22 @@ local function createForest(ForestLocation, model) -- Poisson Disk Sampling (Bri
 					break
 				end
 			end
-			
+
 		end
-		
+
 		if not found then
 			table.remove(activeList, activeIndex)
 		end
 	end
-	
+
 	return points
 end
 
 
 
 -- Module Functions
-function ForestGeneration.createForestOnModel(ForestLocation, model)
-	return createForest(ForestLocation, model)
+function ForestGeneration.createForestOnModel(model)
+	return createForest(model)
 end
 
 return ForestGeneration

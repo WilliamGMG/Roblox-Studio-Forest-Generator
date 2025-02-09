@@ -25,8 +25,8 @@ TreeFolder.Parent = ForestFolder
 local ForestModel = game.Workspace:FindFirstChild("TestModel") -- Load the model
 if ForestModel then
 	
-	local TreePointTable = ForestGeneration.createForestOnModel(ForestFolder, ForestModel) -- Create a table of points for trees
-	local BushPointTable = ForestGeneration.createForestOnModel(ForestFolder, ForestModel) -- Create a table of points for bushes
+	local TreePointTable = ForestGeneration.createForestOnModel(ForestModel) -- Create a table of points for trees
+	local BushPointTable = ForestGeneration.createForestOnModel(ForestModel) -- Create a table of points for bushes
 	
 	-- Create Trees
 	for _, point in pairs(TreePointTable) do
