@@ -72,57 +72,6 @@ local function complieBush(position)
 	return bushModel
 end
 
-local function complieBushOld(position)
-	local bushModel = Instance.new("Model")
-	
-	local startinglength = math.random(BushSettings.minLength * 100, BushSettings.maxLength * 100) / 100
-	local startingheight = math.random(BushSettings.minHeight * 100, BushSettings.maxHeight * 100) / 100
-	local startingWidth = math.random(BushSettings.minWidth * 100, BushSettings.maxWidth * 100) / 100
-	
-	local lengthMultiplier = math.random(BushSettings.maxLengthMultiplier * 1000, BushSettings.minLengthMultiplier * 1000) / 1000
-	local heightMultiplier = math.random(BushSettings.maxHeightMultiplier * 1000, BushSettings.minHeightMultiplier * 1000) / 1000
-	local widthMultiplier = math.random(BushSettings.minWidthMultiplier * 1000, BushSettings.maxWidthMultiplier * 1000) / 1000
-	
-	local runningLengthMultiplier = lengthMultiplier
-	local runningHeightMultiplier = heightMultiplier
-	local runningWidthMultiplier = widthMultiplier
-	
-	local decayRatio = BushSettings.decayRatio
-	local minHeightValue = BushSettings.minHeightValue
-	local redBlue = BushSettings.redBlueValue
-	local minGreen = BushSettings.minGreen
-	local maxGreen = BushSettings.maxGreen
-	
-	local ry = math.random(0, 100) / 100
-	local nthBush = 0
-	
-	repeat
-		nthBush = nthBush + 1
-		
-		local bushSize = Vector3.new(startinglength * runningLengthMultiplier, startingheight * runningHeightMultiplier, startingWidth * runningWidthMultiplier)
-		local bushPosition = Vector3.new(position.X, position.Y + bushSize.Y / 2, position.Z)
-		local rx = math.random(0, 1000) / 1000
-		local rz = math.random(0, 1000) / 1000
-		
-		local bushCFrame
-		if nthBush == 1 then
-			bushCFrame = CFrame.new(bushPosition) * CFrame.Angles(0, ry, 0)
-		else
-			bushCFrame = CFrame.new(bushPosition) * CFrame.Angles(rx, ry, ry)
-		end
-
-		local bushColor = Color3.fromRGB(redBlue, math.random(minGreen, maxGreen), redBlue)
-		local bushPart = tableToPart({size = bushSize, position = bushCFrame, color = bushColor})
-		bushPart.Parent = bushModel
-		
-		runningLengthMultiplier = decayValue(lengthMultiplier, decayRatio, nthBush)
-		runningHeightMultiplier = decayValue(heightMultiplier, decayRatio, nthBush)
-		runningWidthMultiplier = decayValue(widthMultiplier, decayRatio, nthBush)
-	until runningHeightMultiplier * startingheight < minHeightValue
-	
-	return bushModel
-end
-
 -- Module Functions
 function Bush.CreateNewBush(FolderLocation, position)
 	local bush = complieBush(position)
