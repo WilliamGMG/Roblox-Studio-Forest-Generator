@@ -23,23 +23,72 @@ local function calcDistance(x1, x2)
 	return math.abs((x2-x1))
 end
 
-local function createPartsXYListFromModel(model)
+local function createPartsXZListFromModel(model)
 	local decendents = model:GetDescendants()
 	local parts = {}
-
+	
+	local modelMinX = math.huge
+	local modelMaxX = -math.huge
+	local modelMinZ = math.huge
+	local modelMaxZ = -math.huge
+	
+	-- vectors for all 8 corners of a part
+	local offsets = {
+		Vector3.new(1, 1, 1), Vector3.new(1, 1, -1),
+		Vector3.new(1, -1, 1), Vector3.new(1, -1, -1),
+		Vector3.new(-1, 1, 1), Vector3.new(-1, 1, -1),
+		Vector3.new(-1, -1, 1), Vector3.new(-1, -1, -1)
+	}
+	
+	
 	for _, descendant in pairs(decendents) do
-		local descendantPosition = descendant.Position
-		local descendantSize = descendant.Size
 		if descendant:IsA("BasePart") then
-			table.insert(parts, {
-				descendantPosition.X - descendantSize.X / 2, -- minx
-				descendantPosition.X + descendantSize.X / 2, -- maxX
-				descendantPosition.Z - descendantSize.Z / 2, -- minZ
-				descendantPosition.Z + descendantSize.Z / 2,  -- maxZ
-				descendant
-			})
+			
+			local cornerPosition
+			local minX = math.huge
+			local maxX = -math.huge
+			local minZ = math.huge
+			local maxZ = -math.huge
+			
+			-- Get every corner positon
+			for _, offset in ipairs(offsets) do
+				cornerPosition = descendant.CFrame * (descendant.Size / 2 * offset)
+				
+				-- Record model max and mins
+				if minX > cornerPosition.X then
+					minX = cornerPosition.X
+				end
+				if maxX < cornerPosition.X then
+					maxX = cornerPosition.X
+				end
+				if minZ > cornerPosition.Z then
+					minZ = cornerPosition.Z
+				end
+				if maxZ < cornerPosition.Z then
+					maxZ = cornerPosition.Z
+				end
+				
+				-- Record part max and mins
+				if modelMinX > cornerPosition.X then
+					modelMinX = cornerPosition.X
+				end
+				if modelMaxX < cornerPosition.X then
+					modelMaxX = cornerPosition.X
+				end
+				if modelMinZ > cornerPosition.Z then
+					modelMinZ = cornerPosition.Z
+				end
+				if modelMaxZ < cornerPosition.Z then
+					modelMaxZ = cornerPosition.Z
+				end
+			end
+			
+			table.insert(parts, {minX, maxX, minZ, maxZ, descendant})
+			
 		end
 	end
+	
+	table.insert(parts, {modelMinX, modelMaxX, modelMinZ, modelMaxZ})
 	return parts
 end
 
@@ -127,19 +176,20 @@ local function validPoint(parts, x, z, cellSize, gridWidth, gridLength, lowerX, 
 	return true
 end
 
-local function createForest(model) -- Poisson Disk Sampling (Bridson Algorithm)
-	local parts = createPartsXYListFromModel(model)
+local function createForest(model) -- Poisson Disk Sampling
+	local parts = createPartsXZListFromModel(model)
+	local modelMaxMin = table.remove(parts, #parts) -- minX, maxX, minZ, maxZ
+	
 	local radius = ForestSettings.PoissonDiskSamplingRadius
 	local maxAttempts = ForestSettings.maxPointPlaceAttempts
-
+	local chunkWaitTime = ForestSettings.chunkWaitTime
 	local cellSize = radius / math.sqrt(2)
-
+	
 	-- Grid Size
-	local modelPosition, modelSize = model:GetBoundingBox()
-	local gridWidth = math.abs(math.ceil(modelSize.X / cellSize))
-	local gridLength = math.abs(math.ceil(modelSize.Z / cellSize))
-	local lowerX = modelPosition.X - modelSize.X / 2
-	local lowerZ = modelPosition.Z - modelSize.Z / 2
+	local gridWidth = math.abs(math.ceil(calcDistance(modelMaxMin[1], modelMaxMin[2]) / cellSize))
+	local gridLength = math.abs(math.ceil(calcDistance(modelMaxMin[3], modelMaxMin[4]) / cellSize))
+	local lowerX = modelMaxMin[1]
+	local lowerZ = modelMaxMin[3]
 
 	-- Initialize grid and active list
 	local grid = {}
@@ -162,9 +212,13 @@ local function createForest(model) -- Poisson Disk Sampling (Bridson Algorithm)
 	grid[startIndex] = {x = startX, z = startZ}
 	table.insert(activeList, {x = startX, z = startZ})
 	table.insert(points, Vector3.new(startX, startY, startZ))
-
+	
+	local pointRepsCount = 0
+	
 	-- Start main loop
 	while #activeList > 0 do
+		pointRepsCount += 1
+		
 		-- Pick a random point from the active list
 		local activeIndex = math.random(#activeList)
 		local point = activeList[activeIndex]
@@ -190,6 +244,12 @@ local function createForest(model) -- Poisson Disk Sampling (Bridson Algorithm)
 		if not found then
 			table.remove(activeList, activeIndex)
 		end
+		
+		-- Prevent the exhausted time execution error by allowing other tasks to run every 1000 points
+		if pointRepsCount % 1000 == 0 then
+			task.wait(chunkWaitTime)
+		end
+		
 	end
 
 	return points
