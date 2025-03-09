@@ -1,7 +1,7 @@
 # 🌲 Roblox-Studio-Tree-Generator 🌲
 This is a simple forest generator for Roblox Studio that I made for another project. It can create bushes and trees on top of blocks, wedges and corner wedges.
 
-⚠️ **Note:** Support for **cylinders is partial**, and **spheres do not work**
+⚠️ **Note:** Support for **cylinders**, and **spheres** is only confirmed to work in the development branch.
 
 ## Example Forest
 
@@ -80,4 +80,4 @@ Use this method if you want to generate a forest once and then save it as part o
 
 ## **⚠️Missing Patches⚠️**
 
-The points that are generated use a grid structure to evenly space themselves (Poisson Disk Sampling) so `if your object is not aligned with the X, Y, or Z axes` you will most likely see missing patches `towards the edges`. I will fix this at some point.
+The points that are generated use a grid structure to evenly space themselves (Poisson Disk Sampling) so `if your object is not aligned with the X, Y, or Z axes` you will most likely see missing patches `towards the edges`. This has been fixed in the development branch.
